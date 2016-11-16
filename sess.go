@@ -73,6 +73,9 @@ type (
 		mu                sync.Mutex
 	}
 
+	// DialFN is a function that dials to the remote end.
+	DialFN func() (net.Conn, error)
+
 	setReadBuffer interface {
 		SetReadBuffer(bytes int) error
 	}
@@ -898,12 +901,19 @@ func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards in
 		return nil, errors.Wrap(err, "net.ResolveUDPAddr")
 	}
 
-	udpconn, err := net.DialUDP("udp", nil, udpaddr)
+	dial := func() (net.Conn, error) {
+		return net.DialUDP("udp", nil, udpaddr)
+	}
+	return DialWithDialer(dial, block, dataShards, parityShards)
+}
+
+func DialWithDialer(dial DialFN, block BlockCrypt, dataShards, parityShards int) (*UDPSession, error) {
+	conn, err := dial()
 	if err != nil {
 		return nil, errors.Wrap(err, "net.DialUDP")
 	}
 
-	return NewConn(raddr, block, dataShards, parityShards, &ConnectedUDPConn{udpconn, udpconn})
+	return NewConn(conn.RemoteAddr().String(), block, dataShards, parityShards, &ConnectedUDPConn{conn})
 }
 
 // NewConn establishes a session and talks KCP protocol over a packet connection.
@@ -926,8 +936,13 @@ func currentMs() uint32 {
 // to Write syscalls that are 4 times faster on some OS'es. This should only be
 // used for connections that were produced by a net.Dial* call.
 type ConnectedUDPConn struct {
-	*net.UDPConn
-	Conn net.Conn // underlying connection if any
+	net.Conn // underlying connection if any
+}
+
+// ReadFrom implements the method from net.PacketConn
+func (c *ConnectedUDPConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
+	n, err = c.Read(b)
+	return n, c.RemoteAddr(), err
 }
 
 // WriteTo redirects all writes to the Write syscall, which is 4 times faster.
