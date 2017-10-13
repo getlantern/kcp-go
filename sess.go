@@ -14,6 +14,8 @@ import (
 	"github.com/klauspost/crc32"
 
 	"golang.org/x/net/ipv4"
+
+	"github.com/getlantern/netx"
 )
 
 type errTimeout struct {
@@ -896,13 +898,13 @@ func Dial(raddr string) (net.Conn, error) {
 
 // DialWithOptions connects to the remote address "raddr" on the network "udp" with packet encryption
 func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards int) (*UDPSession, error) {
-	udpaddr, err := net.ResolveUDPAddr("udp", raddr)
+	udpaddr, err := netx.ResolveUDPAddr("udp", raddr)
 	if err != nil {
 		return nil, errors.Wrap(err, "net.ResolveUDPAddr")
 	}
 
 	dial := func() (net.Conn, error) {
-		return net.DialUDP("udp", nil, udpaddr)
+		return netx.DialUDP("udp", nil, udpaddr)
 	}
 	return DialWithDialer(dial, block, dataShards, parityShards)
 }
