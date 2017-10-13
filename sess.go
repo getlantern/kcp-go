@@ -963,6 +963,11 @@ type ConnectedUDPConn struct {
 	net.Conn // underlying connection if any
 }
 
+// connectedUDPConn is a wrapper for net.UDPConn which converts WriteTo syscalls
+// to Write syscalls that are 4 times faster on some OS'es. This should only be
+// used for connections that were produced by a net.Dial* call.
+type connectedUDPConn struct{ *net.UDPConn }
+
 // ReadFrom implements the method from net.PacketConn
 func (c *ConnectedUDPConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
 	n, err = c.Read(b)
