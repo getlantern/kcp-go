@@ -6,6 +6,9 @@ import (
 	"crypto/des"
 	"crypto/sha1"
 
+	"github.com/templexxx/xor"
+	"github.com/tjfoc/gmsm/sm4"
+
 	"golang.org/x/crypto/blowfish"
 	"golang.org/x/crypto/cast5"
 	"golang.org/x/crypto/pbkdf2"
@@ -52,6 +55,28 @@ func (c *salsa20BlockCrypt) Decrypt(dst, src []byte) {
 	salsa20.XORKeyStream(dst[8:], src[8:], src[:8], &c.key)
 	copy(dst[:8], src[:8])
 }
+
+type sm4BlockCrypt struct {
+	encbuf []byte
+	decbuf []byte
+	block  cipher.Block
+}
+
+// NewSM4BlockCrypt https://github.com/tjfoc/gmsm/tree/master/sm4
+func NewSM4BlockCrypt(key []byte) (BlockCrypt, error) {
+	c := new(sm4BlockCrypt)
+	block, err := sm4.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	c.block = block
+	c.encbuf = make([]byte, sm4.BlockSize)
+	c.decbuf = make([]byte, 2*sm4.BlockSize)
+	return c, nil
+}
+
+func (c *sm4BlockCrypt) Encrypt(dst, src []byte) { encrypt(c.block, dst, src, c.encbuf) }
+func (c *sm4BlockCrypt) Decrypt(dst, src []byte) { decrypt(c.block, dst, src, c.decbuf) }
 
 type twofishBlockCrypt struct {
 	encbuf []byte
@@ -218,8 +243,8 @@ func NewSimpleXORBlockCrypt(key []byte) (BlockCrypt, error) {
 	return c, nil
 }
 
-func (c *simpleXORBlockCrypt) Encrypt(dst, src []byte) { xorBytes(dst, src, c.xortbl) }
-func (c *simpleXORBlockCrypt) Decrypt(dst, src []byte) { xorBytes(dst, src, c.xortbl) }
+func (c *simpleXORBlockCrypt) Encrypt(dst, src []byte) { xor.Bytes(dst, src, c.xortbl) }
+func (c *simpleXORBlockCrypt) Decrypt(dst, src []byte) { xor.Bytes(dst, src, c.xortbl) }
 
 type noneBlockCrypt struct{}
 
@@ -239,11 +264,11 @@ func encrypt(block cipher.Block, dst, src, buf []byte) {
 	n := len(src) / blocksize
 	base := 0
 	for i := 0; i < n; i++ {
-		xorWords(dst[base:], src[base:], tbl)
+		xor.BytesSrc1(dst[base:], src[base:], tbl)
 		block.Encrypt(tbl, dst[base:])
 		base += blocksize
 	}
-	xorBytes(dst[base:], src[base:], tbl)
+	xor.BytesSrc0(dst[base:], src[base:], tbl)
 }
 
 func decrypt(block cipher.Block, dst, src, buf []byte) {
@@ -255,9 +280,9 @@ func decrypt(block cipher.Block, dst, src, buf []byte) {
 	base := 0
 	for i := 0; i < n; i++ {
 		block.Encrypt(next, src[base:])
-		xorWords(dst[base:], src[base:], tbl)
+		xor.BytesSrc1(dst[base:], src[base:], tbl)
 		tbl, next = next, tbl
 		base += blocksize
 	}
-	xorBytes(dst[base:], src[base:], tbl)
+	xor.BytesSrc0(dst[base:], src[base:], tbl)
 }
