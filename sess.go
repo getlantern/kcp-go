@@ -851,7 +851,7 @@ func Listen(laddr string) (net.Listener, error) {
 // ListenWithOptions listens for incoming KCP packets addressed to the local address laddr on the network "udp" with packet encryption,
 // dataShards, parityShards defines Reed-Solomon Erasure Coding parameters
 func ListenWithOptions(laddr string, block BlockCrypt, dataShards, parityShards int) (*Listener, error) {
-	udpaddr, err := net.ResolveUDP("udp", laddr)
+	udpaddr, err := netx.ResolveUDP("udp", laddr)
 	if err != nil {
 		return nil, errors.Wrap(err, "net.ResolveUDPAddr")
 	}
