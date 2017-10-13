@@ -975,4 +975,9 @@ func (c *ConnectedUDPConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) 
 }
 
 // WriteTo redirects all writes to the Write syscall, which is 4 times faster.
+func (c *ConnectedUDPConn) WriteTo(b []byte, addr net.Addr) (int, error) {
+	return c.Write(b)
+}
+
+// WriteTo redirects all writes to the Write syscall, which is 4 times faster.
 func (c *connectedUDPConn) WriteTo(b []byte, addr net.Addr) (int, error) { return c.Write(b) }
