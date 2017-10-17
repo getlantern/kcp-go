@@ -927,6 +927,7 @@ func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards in
 	}
 
 	dial := func() (net.Conn, error) {
+		log.Debugf("Dialing udp %v", udpaddr)
 		return netx.DialUDP("udp", nil, udpaddr)
 	}
 	return DialWithDialer(dial, block, dataShards, parityShards)
