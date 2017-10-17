@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/netx"
 )
 
@@ -57,6 +58,8 @@ var (
 	// global packet buffer
 	// shared among sending/receiving/FEC
 	xmitBuf sync.Pool
+
+	log = golog.LoggerFor("kcp")
 )
 
 func init() {
