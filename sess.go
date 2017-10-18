@@ -924,14 +924,9 @@ func Dial(raddr string) (net.Conn, error) { return DialWithOptions(raddr, nil, 0
 
 // DialWithOptions connects to the remote address "raddr" on the network "udp" with packet encryption
 func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards int) (*UDPSession, error) {
-	udpaddr, err := netx.ResolveUDP("udp", raddr)
-	if err != nil {
-		return nil, errors.Wrap(err, "net.ResolveUDPAddr")
-	}
-
 	dial := func() (net.Conn, error) {
-		log.Debugf("Dialing udp %v", udpaddr)
-		return netx.DialUDP("udp", nil, udpaddr)
+		log.Debugf("Dialing udp %v", raddr)
+		return netx.Dial("udp", raddr)
 	}
 	return DialWithDialer(dial, block, dataShards, parityShards)
 }
